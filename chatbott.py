@@ -1,101 +1,43 @@
-import requests
-from bs4 import BeautifulSoup
-import spacy
-from sklearn.feature_extraction.text import TfidfVectorizer
-from sklearn.metrics.pairwise import cosine_similarity
-import random
-import string
 import streamlit as st
+import openai
 
-# Load spaCy model
-nlp = spacy.load("en_core_web_sm")
+# Initialize the OpenAI API with your Gemini key
+openai.api_key = "AIzaSyClNJXGxMPPwBwqPhK8Rmk9sFRFPtfW_pY"
 
-# List of URLs to scrape
-urls = [
-    "https://en.wikipedia.org/wiki/Y._S._Jagan_Mohan_Reddy",
-    "https://en.wikipedia.org/wiki/Narendra_Modi",
-    # Add more URLs as needed
-]
+st.title("Gemini Chatbot")
+st.write("This is a ChatGPT-like chatbot powered by the Gemini model.")
 
-# Function to scrape text from a URL
-def scrape_text(url):
-    response = requests.get(url)
-    if response.status_code == 200:
-        soup = BeautifulSoup(response.content, "html.parser")
-        return soup.get_text(separator=" ")
-    else:
-        st.error(f"Failed to scrape {url}")
-        return ""
+# Initialize session state to store the chat history
+if "messages" not in st.session_state:
+    st.session_state["messages"] = []
 
-# Scrape and combine text from all URLs
-corpus_text = ""
-for url in urls:
-    corpus_text += scrape_text(url) + " "
+def generate_response(prompt):
+    # Call the OpenAI API to get the response
+    response = openai.ChatCompletion.create(
+        model="gemini",  # Assuming "gemini" is the model name
+        messages=[{"role": "user", "content": prompt}]
+    )
+    return response['choices'][0]['message']['content']
 
-# Tokenize the text into sentences
-def tokenize_text(text):
-    doc = nlp(text)
-    return [sent.text for sent in doc.sents]
-
-sent_tokens = tokenize_text(corpus_text)
-
-# Define functions for text normalization and lemmatization
-def LemNormalize(text):
-    doc = nlp(text.lower())
-    tokens = [token.lemma_ for token in doc if not token.is_punct and not token.is_stop]
-    return tokens
-
-# Define TF-IDF vectorizer
-TfidfVec = TfidfVectorizer(tokenizer=LemNormalize, stop_words='english')
-
-# Define greeting inputs and responses
-GREETING_INPUTS = ("hello", "hi", "hey", "hola", "greetings", "what's up", "howdy", "yo", "hi there", "good day", "morning", "afternoon", "evening", "sup", "yo yo", "hey there", "nice to meet you", "hello there", "what's happening", "how's it going")
-GREETING_RESPONSES = ["Hello!", "Hi!", "Hey!", "Hola!", "Greetings!", "What's up?", "Howdy!", "Yo!", "Hi there!", "Good day!", "Good morning!", "Good afternoon!", "Good evening!", "Sup!", "Yo yo!", "Hey there!", "Nice to meet you!", "Hello there!", "Not much, you?", "It's going well, thanks!"]
-
-# Define the greeting function
-def greeting(sentence):
-    for word in sentence.split():
-        if word.lower() in GREETING_INPUTS:
-            return random.choice(GREETING_RESPONSES)
-    return None
-
-# Define the response function
-def response(user_response):
-    bot_response = ''
-    sent_tokens_copy = sent_tokens.copy()  # Preserve original sentences
-    sent_tokens_copy.append(user_response)
-    tfidf = TfidfVec.fit_transform(sent_tokens_copy)
-    vals = cosine_similarity(tfidf[-1], tfidf)
-    idx = vals.argsort()[0][-2]
-    flat = vals.flatten()
-    flat.sort()
-    req_tfidf = flat[-2]
-    if req_tfidf == 0:
-        bot_response = "I'm sorry, I didn't understand that."
-    else:
-        bot_response = sent_tokens[idx]
-    return bot_response
-
-# Streamlit UI setup
-st.title("Chatbot")
-st.write("This is a simple chatbot application.")
-
-# Chat history container
-if 'chat_history' not in st.session_state:
-    st.session_state.chat_history = []
-
-# Input field for user input
+# User input section
 user_input = st.text_input("You:", key="input")
 
 if st.button("Send"):
     if user_input:
-        st.session_state.chat_history.append(f"You: {user_input}")
-        if greeting(user_input):
-            bot_response = greeting(user_input)
-        else:
-            bot_response = response(user_input)
-        st.session_state.chat_history.append(f"BOT: {bot_response}")
+        # Append user input to chat history
+        st.session_state.messages.append({"role": "user", "content": user_input})
+        
+        # Get the bot's response
+        bot_response = generate_response(user_input)
+        
+        # Append bot's response to chat history
+        st.session_state.messages.append({"role": "assistant", "content": bot_response})
+        
+        # Clear the input box
+        st.session_state.input = ""
 
-# Display chat history
-for chat in st.session_state.chat_history:
-    st.write(chat)
+# Display the chat history
+for message in st.session_state.messages:
+    role = "You" if message["role"] == "user" else "Gemini"
+    st.write(f"**{role}:** {message['content']}")
+
