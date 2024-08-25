@@ -1,8 +1,8 @@
 import streamlit as st
-import openai
+import gemini
 
-# Initialize the OpenAI API with your Gemini key
-openai.api_key = "AIzaSyClNJXGxMPPwBwqPhK8Rmk9sFRFPtfW_pY"
+# Initialize the Gemini API with your API key
+gemini.api_key = "AIzaSyClNJXGxMPPwBwqPhK8Rmk9sFRFPtfW_pY"
 
 st.title("Gemini Chatbot")
 st.write("This is a ChatGPT-like chatbot powered by the Gemini model.")
@@ -12,9 +12,9 @@ if "messages" not in st.session_state:
     st.session_state["messages"] = []
 
 def generate_response(prompt):
-    # Call the OpenAI API to get the response
-    response = openai.ChatCompletion.create(
-        model="gemini",  # Assuming "gemini" is the model name
+    # Call the Gemini API to get the response
+    response = gemini.ChatCompletion.create(
+        model="gemini",  # Use the correct model name for Gemini
         messages=[{"role": "user", "content": prompt}]
     )
     return response['choices'][0]['message']['content']
@@ -40,4 +40,3 @@ if st.button("Send"):
 for message in st.session_state.messages:
     role = "You" if message["role"] == "user" else "Gemini"
     st.write(f"**{role}:** {message['content']}")
-
