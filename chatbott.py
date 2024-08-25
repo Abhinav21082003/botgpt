@@ -1,13 +1,14 @@
 import requests
 from bs4 import BeautifulSoup
-import nltk
+import spacy
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
 import random
 import string
 import streamlit as st
 
-
+# Load spaCy model
+nlp = spacy.load("en_core_web_sm")
 
 # List of URLs to scrape
 urls = [
@@ -32,20 +33,17 @@ for url in urls:
     corpus_text += scrape_text(url) + " "
 
 # Tokenize the text into sentences
-sent_tokens = nltk.sent_tokenize(corpus_text)
+def tokenize_text(text):
+    doc = nlp(text)
+    return [sent.text for sent in doc.sents]
 
-# Initialize WordNet lemmatizer and stopwords
-lemmatizer = nltk.WordNetLemmatizer()
-stop_words = set(nltk.corpus.stopwords.words('english'))
+sent_tokens = tokenize_text(corpus_text)
 
 # Define functions for text normalization and lemmatization
-def LemTokens(tokens):
-    return [lemmatizer.lemmatize(token) for token in tokens]
-
 def LemNormalize(text):
-    tokens = nltk.word_tokenize(text.lower())
-    tokens = [token for token in tokens if token not in string.punctuation and token not in stop_words]
-    return LemTokens(tokens)
+    doc = nlp(text.lower())
+    tokens = [token.lemma_ for token in doc if not token.is_punct and not token.is_stop]
+    return tokens
 
 # Define TF-IDF vectorizer
 TfidfVec = TfidfVectorizer(tokenizer=LemNormalize, stop_words='english')
