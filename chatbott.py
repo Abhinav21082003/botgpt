@@ -7,9 +7,7 @@ import random
 import string
 import streamlit as st
 
-nltk.download('punkt')
-nltk.download('wordnet')
-nltk.download('stopwords')
+
 
 # List of URLs to scrape
 urls = [
