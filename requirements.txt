@@ -1,7 +1,5 @@
 requests
 beautifulsoup4
-nltk
+spacy
 scikit-learn
-nltk-punkt
-nltk-wordnet
-nltk-stopwords
+streamlit
